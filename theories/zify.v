@@ -24,57 +24,51 @@ Import Order.Theory GRing.Theory Num.Theory.
 
 Local Delimit Scope Z_scope with Z.
 
-Instance Op_isZero : UnOp isZero :=
-  { TUOp := isZero; TUOpInj := fun => erefl }.
-Add UnOp Op_isZero.
+Instance Op_bool_inj : UnOp (inj : bool -> bool) :=
+  { TUOp := id; TUOpInj := fun => erefl }.
+Add UnOp Op_bool_inj.
 
-Instance Op_isLeZero : UnOp isLeZero :=
-  { TUOp := isLeZero; TUOpInj := fun => erefl }.
-Add UnOp Op_isLeZero.
+Instance Op_nat_inj : UnOp (inj : nat -> Z) := Op_Z_of_nat.
+Add UnOp Op_nat_inj.
 
 (******************************************************************************)
 (* bool                                                                       *)
 (******************************************************************************)
 
 Instance Op_addb : BinOp addb :=
-  { TBOp := fun x y => (Z.max (x - y) (y - x))%Z;
-    TBOpInj := ltac:(by case=> [][]) }.
+  { TBOp := fun x y => Bool.eqb x (negb y); TBOpInj := ltac:(by case=> [][]) }.
 Add BinOp Op_addb.
 
 Instance Op_eqb : BinOp eqb :=
-  { TBOp := fun x y => isZero (x - y)%Z; TBOpInj := ltac:(by case=> [][]) }.
+  { TBOp := Bool.eqb; TBOpInj := ltac:(by case=> [][]) }.
 Add BinOp Op_eqb.
 
 Instance Op_eq_op_bool : BinOp (@eq_op bool_eqType) := Op_eqb.
 Add BinOp Op_eq_op_bool.
 
-Instance Op_Z_of_bool : UnOp Z_of_bool :=
-  { TUOp := id; TUOpInj := fun => erefl }.
-Add UnOp Op_Z_of_bool.
-
 Instance Op_bool_le : BinOp (<=%O : bool -> bool -> bool) :=
-  { TBOp := fun x y => Z.max (1 - x)%Z y; TBOpInj := ltac:(by case=> [][]) }.
+  { TBOp := implb; TBOpInj := ltac:(by case=> [][]) }.
 Add BinOp Op_bool_le.
 
 Instance Op_bool_le' : BinOp (>=^d%O : rel bool^d) := Op_bool_le.
 Add BinOp Op_bool_le'.
 
 Instance Op_bool_ge : BinOp (>=%O : bool -> bool -> bool) :=
-  { TBOp := fun x y => Z.max x (1 - y)%Z; TBOpInj := ltac:(by case=> [][]) }.
+  { TBOp := fun x y => implb y x; TBOpInj := ltac:(by case=> [][]) }.
 Add BinOp Op_bool_ge.
 
 Instance Op_bool_ge' : BinOp (<=^d%O : rel bool^d) := Op_bool_ge.
 Add BinOp Op_bool_ge'.
 
 Instance Op_bool_lt : BinOp (<%O : bool -> bool -> bool) :=
-  { TBOp := fun x y => Z.min (1 - x)%Z y; TBOpInj := ltac:(by case=> [][]) }.
+  { TBOp := fun x y => ~~ x && y; TBOpInj := ltac:(by case=> [][]) }.
 Add BinOp Op_bool_lt.
 
 Instance Op_bool_lt' : BinOp (>^d%O : rel bool^d) := Op_bool_lt.
 Add BinOp Op_bool_lt'.
 
 Instance Op_bool_gt : BinOp (>%O : bool -> bool -> bool) :=
-  { TBOp := fun x y => Z.min x (1 - y)%Z; TBOpInj := ltac:(by case=> [][]) }.
+  { TBOp := fun x y => x && ~~ y; TBOpInj := ltac:(by case=> [][]) }.
 Add BinOp Op_bool_gt.
 
 Instance Op_bool_gt' : BinOp (<^d%O : rel bool^d) := Op_bool_gt.
@@ -105,7 +99,7 @@ Instance Op_bool_top' : CstOp (0%O : bool^d) := Op_true.
 Add CstOp Op_bool_top'.
 
 Instance Op_bool_sub : BinOp (Order.sub : bool -> bool -> bool) :=
-  { TBOp := fun x y => Z.min x (1 - y)%Z; TBOpInj := ltac:(by case=> [][]) }.
+  { TBOp := fun x y => x && ~~ y; TBOpInj := ltac:(by case=> [][]) }.
 Add BinOp Op_bool_sub.
 
 Instance Op_bool_compl : UnOp (Order.compl : bool -> bool) := Op_negb.
@@ -143,37 +137,35 @@ Lemma nat_lebE n m : (n <= m) = Nat.leb n m.
 Proof. by elim: n m => [|n ih []]. Qed.
 
 Instance Op_leq : BinOp leq :=
-  { TBOp := fun x y => isLeZero (x - y)%Z;
-    TBOpInj := ltac:(move=> ? ?; rewrite nat_lebE /=; lia) }.
+  { TBOp := Z.leb; TBOpInj := ltac:(move=> ? ?; rewrite nat_lebE; lia) }.
 Add BinOp Op_leq.
 
 Instance Op_geq : BinOp (geq : nat -> nat -> bool) :=
-  { TBOp := fun x y => isLeZero (y - x)%Z;
-    TBOpInj := ltac:(simpl; lia) }.
+  { TBOp := Z.geb; TBOpInj := ltac:(simpl; lia) }.
 Add BinOp Op_geq.
 
 Instance Op_ltn : BinOp (ltn : nat -> nat -> bool) :=
-  { TBOp := fun x y => isLeZero (x + 1 - y)%Z; TBOpInj := ltac:(simpl; lia) }.
+  { TBOp := Z.ltb; TBOpInj := ltac:(simpl; lia) }.
 Add BinOp Op_ltn.
 
 Instance Op_gtn : BinOp (gtn : nat -> nat -> bool) :=
-  { TBOp := fun x y => isLeZero (y + 1 - x); TBOpInj := ltac:(simpl; lia) }.
+  { TBOp := Z.gtb; TBOpInj := ltac:(simpl; lia) }.
 Add BinOp Op_gtn.
 
 Instance Op_minn : BinOp minn :=
-  { TBOp := Z.min; TBOpInj := ltac:(move=> ? ? /=; case: leqP; lia) }.
+  { TBOp := Z.min; TBOpInj := ltac:(move=> ? ?; case: leqP; lia) }.
 Add BinOp Op_minn.
 
 Instance Op_maxn : BinOp maxn :=
-  { TBOp := Z.max; TBOpInj := ltac:(move=> ? ? /=; case: leqP; lia) }.
+  { TBOp := Z.max; TBOpInj := ltac:(move=> ? ?; case: leqP; lia) }.
 Add BinOp Op_maxn.
 
 Instance Op_nat_of_bool : UnOp nat_of_bool :=
-  { TUOp := id; TUOpInj := ltac:(by case) }.
+  { TUOp := Z.b2z; TUOpInj := ltac:(by case) }.
 Add UnOp Op_nat_of_bool.
 
 Instance Op_double : UnOp double :=
-  { TUOp := Z.mul 2; TUOpInj := ltac:(move=> ?; rewrite [inj]/= -muln2; lia) }.
+  { TUOp := Z.mul 2; TUOpInj := ltac:(move=> ?; rewrite -muln2; lia) }.
 Add UnOp Op_double.
 
 Lemma Op_expn_subproof n m : Z.of_nat (n ^ m) = (Z.of_nat n ^ Z.of_nat m)%Z.
@@ -261,11 +253,11 @@ Instance Op_int_eq : BinRel (@eq int) :=
 Add BinRel Op_int_eq.
 
 Lemma Op_int_eq_op_subproof (n m : int) :
-  Z_of_bool (n == m) = isZero (Z_of_int n - Z_of_int m).
+  (n == m) = Z.eqb (Z_of_int n) (Z_of_int m).
 Proof. case: n m => ? [] ?; do 2 rewrite /eq_op /=; lia. Qed.
 
 Instance Op_int_eq_op : BinOp (@eq_op int_eqType : int -> int -> bool) :=
-  { TBOp := fun x y => isZero (Z.sub x y); TBOpInj := Op_int_eq_op_subproof }.
+  { TBOp := Z.eqb; TBOpInj := Op_int_eq_op_subproof }.
 Add BinOp Op_int_eq_op.
 
 Instance Op_int_0 : CstOp (0%R : int) := { TCst := 0%Z; TCstInj := erefl }.
@@ -332,13 +324,11 @@ Instance Op_int_normr : UnOp (Num.norm : int -> int) :=
 Add UnOp Op_int_normr.
 
 Instance Op_lez : BinOp intOrdered.lez :=
-  { TBOp := fun x y => isLeZero (x - y)%Z;
-    TBOpInj := ltac:(case=> ? [] ? /=; lia) }.
+  { TBOp := Z.leb; TBOpInj := ltac:(case=> ? [] ? /=; lia) }.
 Add BinOp Op_lez.
 
 Instance Op_ltz : BinOp intOrdered.ltz :=
-  { TBOp := fun x y => isLeZero (x + 1 - y)%Z;
-    TBOpInj := ltac:(case=> ? [] ? /=; lia) }.
+  { TBOp := Z.ltb; TBOpInj := ltac:(case=> ? [] ? /=; lia) }.
 Add BinOp Op_ltz.
 
 (* missing: *)
@@ -361,7 +351,7 @@ Instance Op_int_le' : BinOp (>=^d%O : rel int^d) := Op_lez.
 Add BinOp Op_int_le'.
 
 Instance Op_int_ge : BinOp (>=%O : int -> int -> bool) :=
-  { TBOp := fun x y => isLeZero (y - x)%Z; TBOpInj := ltac:(simpl; lia) }.
+  { TBOp := Z.geb; TBOpInj := ltac:(simpl; lia) }.
 Add BinOp Op_int_ge.
 
 Instance Op_int_ge' : BinOp (<=^d%O : rel int^d) := Op_int_ge.
@@ -374,7 +364,7 @@ Instance Op_int_lt' : BinOp (>^d%O : rel int^d) := Op_ltz.
 Add BinOp Op_int_lt'.
 
 Instance Op_int_gt : BinOp (>%O : int -> int -> bool) :=
-  { TBOp := fun x y => isLeZero (y + 1 - x)%Z; TBOpInj := ltac:(simpl; lia) }.
+  { TBOp := Z.gtb; TBOpInj := ltac:(simpl; lia) }.
 Add BinOp Op_int_gt.
 
 Instance Op_int_gt' : BinOp (<^d%O : rel int^d) := Op_int_gt.
@@ -434,12 +424,12 @@ Instance Op_modz : BinOp modz :=
   { TBOp := modZ; TBOpInj := ltac:(by move=> ? ?; rewrite /modZ !Z_of_intK) }.
 Add BinOp Op_modz.
 
-Lemma Op_dvdz_subproof n m :
-  Z_of_bool (dvdz n m) = isZero (modZ (Z_of_int m) (Z_of_int n)).
-Proof. have ->: dvdz n m = (modz m n == 0%R); [exact/dvdz_mod0P/eqP | lia]. Qed.
+Lemma Op_dvdz_subproof (n m : int) :
+  dvdz n m = Z.eqb (modZ (Z_of_int m) (Z_of_int n)) 0%Z.
+Proof. apply/dvdz_mod0P/idP; lia. Qed.
 
 Instance Op_dvdz : BinOp dvdz :=
-  { TBOp := fun x y => isZero (modZ y x); TBOpInj := Op_dvdz_subproof }.
+  { TBOp := fun n m => Z.eqb (modZ m n) 0%Z; TBOpInj := Op_dvdz_subproof }.
 Add BinOp Op_dvdz.
 
 Lemma divZ_spec_subproof n m :
@@ -466,7 +456,7 @@ Instance divZ_spec : BinOpSpec divZ :=
                           (m < 0 -> r * m <= n < (r - 1) * m)%Z /\
                           (m = 0 -> r = 0)%Z;
     BSpec := divZ_spec_subproof }.
-Add Spec divZ_spec.
+Add BinOpSpec divZ_spec.
 
 Lemma modZ_spec_subproof n m :
   (n = divZ n m * m + modZ n m /\
@@ -491,8 +481,8 @@ Instance modZ_spec : BinOpSpec modZ :=
                 (m < 0 -> 0 <= r < - m) /\
                 (m = 0 -> r = n))%Z;
     BSpec := modZ_spec_subproof }.
-Add Spec modZ_spec.
-Add Spec divZ_spec. (* workaround *)
+Add BinOpSpec modZ_spec.
+Add BinOpSpec divZ_spec. (* workaround *)
 
 (******************************************************************************)
 (* natdiv                                                                     *)
@@ -513,23 +503,23 @@ Instance Op_modn : BinOp modn := { TBOp := modZ; TBOpInj := Op_modn_subproof }.
 Add BinOp Op_modn.
 
 Instance Op_dvdn : BinOp dvdn :=
-  { TBOp := fun x y => isZero (modZ y x);
-    TBOpInj := ltac:(rewrite /dvdn /=; lia)}.
+  { TBOp := fun x y => Z.eqb (modZ y x) 0%Z;
+    TBOpInj := ltac:(rewrite /dvdn; lia)}.
 Add BinOp Op_dvdn.
 
 Instance Op_odd : UnOp odd :=
-  { TUOp := fun x => modZ x 2;
-    TUOpInj := ltac:(move=> n /=; case: odd (modn2 n); lia) }.
+  { TUOp := fun x => Z.eqb (modZ x 2) 1%Z;
+    TUOpInj := ltac:(move=> n; case: odd (modn2 n); lia) }.
 Add UnOp Op_odd.
 
 Instance Op_half : UnOp half :=
   { TUOp := fun x => divZ x 2;
-    TUOpInj := ltac:(move=> ? /=; rewrite -divn2; lia) }.
+    TUOpInj := ltac:(move=> ?; rewrite -divn2; lia) }.
 Add UnOp Op_half.
 
 Instance Op_uphalf : UnOp uphalf :=
   { TUOp := fun x => divZ (x + 1)%Z 2;
-    TUOpInj := ltac:(move=> ? /=; rewrite uphalf_half; lia) }.
+    TUOpInj := ltac:(move=> ?; rewrite uphalf_half; lia) }.
 Add UnOp Op_uphalf.
 
 (******************************************************************************)
@@ -565,7 +555,7 @@ Instance Op_lcmn : BinOp lcmn := { TBOp := Z.lcm; TBOpInj := Op_lcmn_subproof }.
 Add BinOp Op_lcmn.
 
 Instance Op_coprime : BinOp coprime :=
-  { TBOp := fun x y => isZero (Z.gcd x y - 1);
+  { TBOp := fun x y => Z.eqb (Z.gcd x y) 1%Z;
     TBOpInj := ltac:(rewrite /= /coprime; lia) }.
 Add BinOp Op_coprime.
 
@@ -580,7 +570,7 @@ Instance Op_gcdz : BinOp gcdz := { TBOp := Z.gcd; TBOpInj := Op_gcdz_subproof }.
 Add BinOp Op_gcdz.
 
 Instance Op_coprimez : BinOp coprimez :=
-  { TBOp := fun x y => isZero (Z.gcd x y - 1);
+  { TBOp := fun x y => Z.eqb (Z.gcd x y) 1%Z;
     TBOpInj := ltac:(rewrite /= /coprimez; lia) }.
 Add BinOp Op_coprimez.
 
@@ -590,12 +580,11 @@ End MathcompZifyInstances.
 
 Module Export Exports.
 Import MathcompZifyInstances.
-Add UnOp Op_isZero.
-Add UnOp Op_isLeZero.
+(* Add UnOp Op_bool_inj. *)
+(* Add UnOp Op_nat_inj. *)
 Add BinOp Op_addb.
 Add BinOp Op_eqb.
 Add BinOp Op_eq_op_bool.
-Add UnOp Op_Z_of_bool.
 Add BinOp Op_bool_le.
 Add BinOp Op_bool_le'.
 Add BinOp Op_bool_ge.
@@ -689,8 +678,8 @@ Add BinOp Op_modZ.
 Add BinOp Op_divz.
 Add BinOp Op_modz.
 Add BinOp Op_dvdz.
-Add Spec modZ_spec.
-Add Spec divZ_spec.
+Add BinOpSpec modZ_spec.
+Add BinOpSpec divZ_spec.
 Add BinOp Op_divn.
 Add BinOp Op_modn.
 Add BinOp Op_dvdn.
