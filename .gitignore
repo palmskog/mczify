@@ -7,6 +7,8 @@
 *.aux
 *.a
 *.o
+*.vos
+*.vok
 Make*.coq
 Make*.coq.bak
 Make*.coq.conf
